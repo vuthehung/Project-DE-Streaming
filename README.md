@@ -1,47 +1,57 @@
 # Realtime Data Streaming
 
-## Table of Contents
-- [Realtime Data Streaming](#realtime-data-streaming)
-  - [Table of Contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [System Architecture](#system-architecture)
-  - [Knowledge learned](#knowledge-learned)
-  - [Technologies](#technologies)
-
 ## Introduction
 
-This project serves as a comprehensive guide to building an end-to-end data engineering pipeline. It covers each stage from data ingestion to processing and finally to storage, utilizing a robust tech stack that includes Apache Airflow, Python, Apache Kafka, Apache Zookeeper, Apache Spark, and Cassandra. Everything is containerized using Docker for ease of deployment and scalability.
+This project employs a multifaceted technological stack to establish an end-to-end data processing pipeline. The workflow commences by fetching data from the randomuser.me API to generate synthetic user data. This raw data is subsequently channeled through Apache Airflow for data orchestration and storage in a PostgreSQL database.
+
+The data is then streamed through Apache Kafka in conjunction with Apache Zookeeper to facilitate real-time data movement from PostgreSQL to the processing engine. For streamlined management and monitoring of Kafka streams, Control Center and Schema Registry are employed to handle schema configurations and ensure effective oversight of the data streams.
+
+Subsequently, Apache Spark is utilized to conduct data processing tasks, following which the processed data is persisted in a Cassandra database, providing a durable storage solution for the refined information.
+
+The entire pipeline is encapsulated within Docker containers, affording a streamlined and portable deployment mechanism.
 
 ## System Architecture
 
-![System Architecture](https://github.com/airscholar/e2e-data-engineering/blob/main/Data%20engineering%20architecture.png)
+![System Architecture](./images/Data_engineering_architecture.png)
 
-The project is designed with the following components:
+## Technologies
 
-- **Data Source**: We use `randomuser.me` API to generate random user data for our pipeline.
-- **Apache Airflow**: Responsible for orchestrating the pipeline and storing fetched data in a PostgreSQL database.
+- **Data Source**: `randomuser.me` API to generate random user data for the pipeline.
+- **Apache Airflow**: Helps orchestrating the pipeline and storing fetched data in a PostgreSQL database.
 - **Apache Kafka and Zookeeper**: Used for streaming data from PostgreSQL to the processing engine.
 - **Control Center and Schema Registry**: Helps in monitoring and schema management of our Kafka streams.
 - **Apache Spark**: For data processing with its master and worker nodes.
 - **Cassandra**: Where the processed data will be stored.
+- **Docker**: Containerize the entire pipeline.
 
-## Knowledge learned
+## Results
 
-- Setting up a data pipeline with Apache Airflow
-- Real-time data streaming with Apache Kafka
-- Distributed synchronization with Apache Zookeeper
-- Data processing techniques with Apache Spark
-- Data storage solutions with Cassandra and PostgreSQL
-- Containerizing your entire data engineering setup with Docker
+- Airflow UI on `localhost:8080`
 
-## Technologies
+![Airflow UI](./images/Airflow.png)
 
-- Apache Airflow
-- Python
-- Apache Kafka
-- Apache Zookeeper
-- Apache Spark
-- Cassandra
-- PostgreSQL
-- Docker
+- Control Center UI on `localhost:9021`
+
+![Control Center UI](./images/Control_center.png)
+
+- Topic
+
+![Users Created Topic](./images/users_created_topic.png)
+
+- Detail Data
+
+![Detail Data](./images/detail_users_created_data.png)
+
+- Data in table Cassandra
+
+![Data in Cassandra](./images/table_cassandra.png)
+
+## Things to learn
+
+- Establishing a data pipeline using Apache Airflow for workflow orchestration and data management.
+- Implementing real-time data streaming through Apache Kafka to facilitate data transfer and processing in real-time.
+- Enabling distributed synchronization using Apache Zookeeper for robust coordination and reliability in a distributed system.
+- Employing data processing techniques powered by Apache Spark for efficient and scalable data transformation and analysis.
+- Utilizing data storage solutions with PostgreSQL and Cassandra to securely store and manage structured and unstructured data, respectively.
+- Containerizing the entire data engineering infrastructure with Docker to ensure portability and ease of deployment across various environments.
 
