@@ -57,7 +57,7 @@ def stream_data():
             logging.error(f'An error occured: {e}')
             continue
 
-with DAG('user_automation',
+with DAG('stream_data_from_api',
          default_args=default_args,
          schedule_interval='@daily',
          catchup=False) as dag:

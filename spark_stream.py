@@ -6,34 +6,6 @@ from pyspark.sql.functions import from_json, col
 from pyspark.sql.types import StructType, StructField, StringType
 
 
-def create_keyspace(session):
-    session.execute("""
-        CREATE KEYSPACE IF NOT EXISTS spark_streams
-        WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'};
-    """)
-
-    print("Keyspace created successfully!")
-
-
-def create_table(session):
-    session.execute("""
-    CREATE TABLE IF NOT EXISTS spark_streams.created_users (
-        id UUID PRIMARY KEY,
-        first_name TEXT,
-        last_name TEXT,
-        gender TEXT,
-        address TEXT,
-        post_code TEXT,
-        email TEXT,
-        username TEXT,
-        registered_date TEXT,
-        phone TEXT,
-        picture TEXT);
-    """)
-
-    print("Table created successfully!")
-
-
 def insert_data(session, **kwargs):
     print("inserting data...")
 
@@ -144,8 +116,6 @@ if __name__ == "__main__":
         session = create_cassandra_connection()
 
         if session is not None:
-            create_keyspace(session)
-            create_table(session)
 
             logging.info("Streaming is being started...")
 
