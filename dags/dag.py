@@ -81,7 +81,7 @@ with DAG('user_automation',
     process_stream_task = BashOperator(
         task_id='process_stream_task',
         bash_command="""
-            spark-submit --master spark://localhost/7077 ./spark_stream.py
+            spark-submit /opt/airflow/code/spark_stream.py
         """
     )
 

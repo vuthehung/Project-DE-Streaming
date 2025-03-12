@@ -1,6 +1,78 @@
 version: '3'
 
+x-airflow-common:
+  &airflow-common
+  image: airflow
+  # build: ./airflow
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKEND: 'airflow.api.auth.backend.basic_auth'
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- apache-airflow-providers-microsoft-mssql}
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - airflow_logs:/opt/airflow/logs
+    - airflow_plugins:/opt/airflow/plugins
+    - airflow_scripts:/opt/airflow/scripts
+    - ./script:/opt/airflow/code
+  user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
+  depends_on:
+    postgres:
+      condition: service_healthy
+  networks:
+    confluent:
+
 services:
+  postgres:
+  image: postgres
+  container_name: postgres
+  environment:
+    POSTGRES_USER: airflow
+    POSTGRES_PASSWORD: airflow
+    POSTGRES_DB: airflow
+  healthcheck:
+    test: ["CMD", "pg_isready", "-U", "airflow"]
+    interval: 5s
+    retries: 5
+  restart: always
+  networks:
+    confluent:
+  volumes:
+    - postgres-db-volume:/var/lib/postgresql/data
+
+  airflow-webserver:
+  <<: *airflow-common
+  container_name: airflow-webserver
+  healthcheck:
+    test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+    interval: 10s
+    timeout: 10s
+    retries: 5
+  ports:
+    - 8282:8080
+  restart: always
+  command: webserver
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    restart: always
+    command: scheduler
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_UPGRADE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+    command: version
   zookeeper:
       image: confluentinc/cp-zookeeper:7.4.0
       hostname: zookeeper
@@ -103,66 +175,6 @@ services:
       timeout: 10s
       retries: 5
 
-  webserver:
-    image: apache/airflow:2.6.0-python3.9
-    command: webserver
-    entrypoint: ['/opt/airflow/script/entrypoint.sh']
-    depends_on:
-      - postgres
-    environment:
-      - LOAD_EX=n
-      - EXECUTOR=Sequential
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW_WEBSERVER_SECRET_KEY=this_is_a_very_secured_key
-    logging:
-      options:
-        max-size: 10m
-        max-file: "3"
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./script/entrypoint.sh:/opt/airflow/script/entrypoint.sh
-      - ./requirements.txt:/opt/airflow/requirements.txt
-    ports:
-      - "8080:8080"
-    healthcheck:
-      test: ['CMD-SHELL', "[ -f /opt/airflow/airflow-webserver.pid ]"]
-      interval: 30s
-      timeout: 30s
-      retries: 3
-    networks:
-      - confluent
-
-  scheduler:
-    image: apache/airflow:2.6.0-python3.9
-    depends_on:
-      webserver:
-        condition: service_healthy
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./script/entrypoint.sh:/opt/airflow/script/entrypoint.sh
-      - ./requirements.txt:/opt/airflow/requirements.txt
-    environment:
-      - LOAD_EX=n
-      - EXECUTOR=Sequential
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW_WEBSERVER_SECRET_KEY=this_is_a_very_secured_key
-    command: bash -c "pip install -r ./requirements.txt && airflow db upgrade && airflow scheduler"
-    networks:
-      - confluent
-
-  postgres:
-    image: postgres:14.0
-    environment:
-      - POSTGRES_USER=airflow
-      - POSTGRES_PASSWORD=airflow
-      - POSTGRES_DB=airflow
-    logging:
-      options:
-        max-size: 10m
-        max-file: "3"
-    networks:
-      - confluent
-
   spark-master:
     image: bitnami/spark:latest
     command: bin/spark-class org.apache.spark.deploy.master.Master
@@ -199,3 +211,9 @@ services:
       - confluent
 networks:
   confluent:
+
+volumes:
+  postgres-db-volume:
+  airflow_logs:
+  airflow_plugins:
+  airflow_scripts:
